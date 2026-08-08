@@ -18,7 +18,6 @@ class InfluenzaApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        fontFamily: 'Roboto',
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -26,30 +25,86 @@ class InfluenzaApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
-        fontFamily: 'Roboto',
       ),
       themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+      home: const AuthScreen(),
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentTab = 0;
+class _AuthScreenState extends State<AuthScreen> {
+  final _idController = TextEditingController();
+  final _passcodeController = TextEditingController();
+  bool _obscurePasscode = true;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  final List<Widget> _screens = const [
-    _DashboardView(),
-    _InfoView(),
-    _PreventionView(),
-    _SettingsView(),
-  ];
+  static const String _validId = 'ADMIN123';
+  static const String _validPasscode = '123ADMIN';
+
+  void _authenticate() {
+    setState(() {
+      _errorMessage = null;
+    });
+
+    final id = _idController.text.trim();
+    final passcode = _passcodeController.text.trim();
+
+    if (id.isEmpty || passcode.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter both ID and Passcode.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+
+      if (id == _validId && passcode == _validPasscode) {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const DashboardScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              final tween = Tween(begin: 0.0, end: 1.0);
+              final curvedAnimation = CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOutCubic,
+              );
+              return FadeTransition(
+                opacity: tween.animate(curvedAnimation),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 600),
+          ),
+        );
+      } else {
+        setState(() {
+          _errorMessage = 'Invalid ID or Passcode. Please try again.';
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _idController.dispose();
+    _passcodeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,355 +112,190 @@ class _HomeScreenState extends State<HomeScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _screens[_currentTab],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.primary,
+              colorScheme.tertiary,
+              colorScheme.primaryContainer,
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ),
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentTab,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentTab = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.info_outline),
-            selectedIcon: Icon(Icons.info),
-            label: 'Info',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shield_outlined),
-            selectedIcon: Icon(Icons.shield),
-            label: 'Prevention',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardView extends StatelessWidget {
-  const _DashboardView();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  colorScheme.primary,
-                  colorScheme.tertiary,
-                ],
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Card(
+              elevation: 12,
+              shadowColor: Colors.black.withValues(alpha: 0.15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
               ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Influenza',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Stay Informed, Stay Protected',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.85),
-                          ),
-                        ),
-                      ],
-                    ),
+                    // Logo / App Icon
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(16),
+                        color: colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.coronavirus,
-                        color: Colors.white,
-                        size: 28,
+                      child: Icon(
+                        Icons.shield_rounded,
+                        size: 48,
+                        color: colorScheme.onPrimaryContainer,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.amber.shade200,
-                        size: 28,
+                    const SizedBox(height: 20),
+
+                    // Title
+                    Text(
+                      'Influenza',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Sign in to continue',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // ID Field
+                    TextFormField(
+                      controller: _idController,
+                      textCapitalization: TextCapitalization.characters,
+                      keyboardType: TextInputType.text,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      decoration: InputDecoration(
+                        labelText: 'ID',
+                        hintText: 'Enter your ID',
+                        prefixIcon: const Icon(Icons.badge_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        filled: true,
+                        fillColor: colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.3),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Passcode Field
+                    TextFormField(
+                      controller: _passcodeController,
+                      obscureText: _obscurePasscode,
+                      keyboardType: TextInputType.text,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      decoration: InputDecoration(
+                        labelText: 'Passcode',
+                        hintText: 'Enter your passcode',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePasscode
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePasscode = !_obscurePasscode;
+                            });
+                          },
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        filled: true,
+                        fillColor: colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.3),
+                      ),
+                      onFieldSubmitted: (_) => _authenticate(),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Error Message
+                    if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
                           children: [
-                            Text(
-                              'Flu Season Alert',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            Icon(
+                              Icons.error_outline,
+                              color: colorScheme.error,
+                              size: 18,
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Flu activity is currently elevated. Take preventive measures.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.8),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.error,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.all(24),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.9,
-            ),
-            delegate: SliverChildListDelegate([
-              _StatCard(
-                icon: Icons.thermostat,
-                label: 'Symptoms',
-                value: 'Check Now',
-                color: Colors.orange,
-                onTap: () {},
-              ),
-              _StatCard(
-                icon: Icons.vaccines,
-                label: 'Vaccines',
-                value: 'Find Nearby',
-                color: Colors.green,
-                onTap: () {},
-              ),
-              _StatCard(
-                icon: Icons.local_hospital,
-                label: 'Nearby Clinics',
-                value: 'View Map',
-                color: Colors.blue,
-                onTap: () {},
-              ),
-              _StatCard(
-                icon: Icons.analytics,
-                label: 'Statistics',
-                value: 'View Data',
-                color: Colors.purple,
-                onTap: () {},
-              ),
-            ]),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'Quick Tips',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        SliverList(
-          delegate: SliverChildListDelegate([
-            _TipCard(
-              icon: Icons.wash,
-              title: 'Wash Your Hands',
-              description:
-                  'Wash hands frequently with soap and water for at least 20 seconds to prevent the spread of flu viruses.',
-              color: Colors.cyan,
-            ),
-            _TipCard(
-              icon: Icons.masks,
-              title: 'Wear a Mask',
-              description:
-                  'Use a mask in crowded places to reduce the risk of inhaling flu droplets from infected individuals.',
-              color: Colors.teal,
-            ),
-            _TipCard(
-              icon: Icons.bedtime,
-              title: 'Get Enough Rest',
-              description:
-                  'Adequate sleep strengthens your immune system, making your body more resilient against influenza.',
-              color: Colors.indigo,
-            ),
-          ]),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 80)),
-      ],
-    );
-  }
-}
+                    const SizedBox(height: 16),
 
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: color, size: 28),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TipCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-  final Color color;
-
-  const _TipCard({
-    required this.icon,
-    required this.title,
-    required this.description,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-      child: Card(
-        elevation: 1,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                    // Login Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: FilledButton.icon(
+                        onPressed: _isLoading ? null : _authenticate,
+                        icon: _isLoading
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: colorScheme.onPrimary,
+                                ),
+                              )
+                            : const Icon(Icons.login_rounded),
+                        label: Text(
+                          _isLoading ? 'Authenticating...' : 'Sign In',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 24),
+
+                    // Footer
                     Text(
-                      description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.5,
+                      'v0.0.1  |  Under Development',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.6),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -413,447 +303,100 @@ class _TipCard extends StatelessWidget {
   }
 }
 
-class _InfoView extends StatelessWidget {
-  const _InfoView();
+class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'About Influenza',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Influenza'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Sign Out',
+            onPressed: () {
+              Navigator.of(context).pushReplacement(
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const AuthScreen(),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(
+                      opacity: Tween<double>(begin: 0.0, end: 1.0)
+                          .animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeInOutCubic,
+                      )),
+                      child: child,
+                    );
+                  },
+                  transitionDuration: const Duration(milliseconds: 400),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Learn about the flu virus and how it affects your health.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
           ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              _InfoSection(
-                title: 'What is Influenza?',
-                content:
-                    'Influenza (flu) is a contagious respiratory illness caused by influenza viruses. It can cause mild to severe illness, and at times can lead to death. The flu is different from a cold and usually comes on suddenly.',
-                icon: Icons.coronavirus,
-              ),
-              _InfoSection(
-                title: 'Types of Flu Viruses',
-                content:
-                    'There are four types of influenza viruses: A, B, C, and D. Influenza A and B viruses cause seasonal epidemics of disease. Influenza A viruses are further classified into subtypes based on surface proteins.',
-                icon: Icons.biotech,
-              ),
-              _InfoSection(
-                title: 'Common Symptoms',
-                content:
-                    'Fever or chills, cough, sore throat, runny or stuffy nose, muscle or body aches, headaches, fatigue, and sometimes vomiting and diarrhea. Symptoms usually appear 1-4 days after exposure.',
-                icon: Icons.medical_services,
-              ),
-              _InfoSection(
-                title: 'How It Spreads',
-                content:
-                    'Flu viruses spread mainly by droplets made when people with flu cough, sneeze, or talk. These droplets can land in the mouths or noses of people nearby. You can also get flu by touching surfaces.',
-                icon: Icons.share,
-              ),
-              _InfoSection(
-                title: 'Who Is at Risk?',
-                content:
-                    'People at higher risk include adults 65+, children under 5, pregnant women, and those with chronic medical conditions like asthma, diabetes, or heart disease.',
-                icon: Icons.groups,
-              ),
-            ]),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 80)),
-      ],
-    );
-  }
-}
-
-class _InfoSection extends StatelessWidget {
-  final String title;
-  final String content;
-  final IconData icon;
-
-  const _InfoSection({
-    required this.title,
-    required this.content,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        elevation: 1,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: theme.colorScheme.primary, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      content,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+        ],
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.surface,
+              colorScheme.surfaceContainerLow,
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PreventionView extends StatelessWidget {
-  const _PreventionView();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
+        child: Center(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+            padding: const EdgeInsets.all(32),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.verified_user_rounded,
+                    size: 64,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Text(
-                  'Prevention',
+                  'Welcome, Admin',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Protect yourself and others from the flu.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  'You are now authenticated.\nMore features coming soon.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
+                ),
+                const SizedBox(height: 32),
+                FilledButton.tonalIcon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.construction_rounded),
+                  label: const Text('Under Development'),
                 ),
               ],
             ),
           ),
         ),
-        SliverList(
-          delegate: SliverChildListDelegate([
-            _PreventionItem(
-              step: '01',
-              title: 'Get Vaccinated',
-              description:
-                  'Annual flu vaccination is the best way to protect yourself. Everyone 6 months and older should get a flu vaccine every season.',
-              icon: Icons.vaccines,
-              color: Colors.green,
-            ),
-            _PreventionItem(
-              step: '02',
-              title: 'Practice Good Hygiene',
-              description:
-                  'Wash your hands often with soap and water. Use hand sanitizer if soap is unavailable. Avoid touching your face.',
-              icon: Icons.wash,
-              color: Colors.blue,
-            ),
-            _PreventionItem(
-              step: '03',
-              title: 'Avoid Close Contact',
-              description:
-                  'Stay away from sick people. If you are sick, keep your distance from others to protect them from getting sick too.',
-              icon: Icons.social_distance,
-              color: Colors.orange,
-            ),
-            _PreventionItem(
-              step: '04',
-              title: 'Stay Home When Sick',
-              description:
-                  'If you have flu-like symptoms, stay home for at least 24 hours after your fever is gone except to get medical care.',
-              icon: Icons.home,
-              color: Colors.red,
-            ),
-            _PreventionItem(
-              step: '05',
-              title: 'Cover Coughs & Sneezes',
-              description:
-                  'Use a tissue or your elbow to cover coughs and sneezes. Dispose of tissues immediately and wash your hands.',
-              icon: Icons.air,
-              color: Colors.purple,
-            ),
-            _PreventionItem(
-              step: '06',
-              title: 'Clean Surfaces',
-              description:
-                  'Clean and disinfect frequently touched surfaces at home, work, or school, especially when someone is ill.',
-              icon: Icons.cleaning_services,
-              color: Colors.teal,
-            ),
-          ]),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 80)),
-      ],
-    );
-  }
-}
-
-class _PreventionItem extends StatelessWidget {
-  final String step;
-  final String title;
-  final String description;
-  final IconData icon;
-  final Color color;
-
-  const _PreventionItem({
-    required this.step,
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-      child: Card(
-        elevation: 1,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: color, size: 24),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    step,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
-    );
-  }
-}
-
-class _SettingsView extends StatelessWidget {
-  const _SettingsView();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Settings',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Configure your preferences.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Column(
-                children: [
-                  _SettingsTile(
-                    icon: Icons.notifications_outlined,
-                    title: 'Notifications',
-                    subtitle: 'Enable flu alerts and reminders',
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  _SettingsTile(
-                    icon: Icons.location_on_outlined,
-                    title: 'Location Services',
-                    subtitle: 'Find nearby vaccination centers',
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  _SettingsTile(
-                    icon: Icons.dark_mode_outlined,
-                    title: 'Dark Mode',
-                    subtitle: 'Follow system theme',
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  _SettingsTile(
-                    icon: Icons.language,
-                    title: 'Language',
-                    subtitle: 'English',
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Column(
-                children: [
-                  _SettingsTile(
-                    icon: Icons.info_outlined,
-                    title: 'About',
-                    subtitle: 'Version 0.0.1 (Under Development)',
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  _SettingsTile(
-                    icon: Icons.privacy_tip_outlined,
-                    title: 'Privacy Policy',
-                    subtitle: 'How we handle your data',
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  _SettingsTile(
-                    icon: Icons.description_outlined,
-                    title: 'Terms of Service',
-                    subtitle: 'Usage terms and conditions',
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 80)),
-      ],
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(
-        title,
-        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-      trailing: const Icon(Icons.chevron_right, size: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }
